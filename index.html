@@ -3,102 +3,127 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>縦長対応・マイフォトパズル</title>
+    <title>万能・比率固定パズル</title>
     <style>
         body { 
             margin: 0; padding: 0; font-family: sans-serif; 
             display: flex; flex-direction: column; align-items: center; 
-            background: #1a1a1a; color: white; min-height: 100vh;
+            background: #121212; color: white; min-height: 100vh;
         }
-        h1 { font-size: 1.2rem; margin: 10px 0; }
+        .header { width: 100%; padding: 10px; display: flex; flex-direction: column; align-items: center; background: #000; }
+        h1 { font-size: 1rem; margin: 5px 0; color: #ffeb3b; }
         
-        /* 縦長に合わせたコンテナ設定（幅300px：高さ400pxの比率） */
+        .difficulty-selector { margin: 10px 0; display: flex; gap: 5px; }
+        .diff-btn { 
+            padding: 6px 12px; border-radius: 15px; border: 1px solid #555;
+            background: #333; color: white; font-size: 11px; cursor: pointer;
+        }
+        .diff-btn.active { border-color: #ffeb3b; color: #ffeb3b; background: #444; }
+
+        #game-outer { 
+            width: 95vw; height: 70vh; /* 最大表示エリア */
+            display: flex; justify-content: center; align-items: center;
+        }
         #game-container { 
             position: relative; 
-            width: 80vw; 
-            height: 106.6vw; /* 3:4の比率 */
-            max-width: 330px; 
-            max-height: 440px; 
-            border: 4px solid #fff; border-radius: 10px; 
-            background: #333; overflow: hidden;
+            border: 3px solid #fff; border-radius: 5px; background: #333;
+            box-shadow: 0 0 20px rgba(0,0,0,0.5);
         }
         .tile {
-            position: absolute;
+            position: absolute; border: 0.5px solid rgba(255,255,255,0.3);
+            box-sizing: border-box; transition: left 0.3s, top 0.3s;
             background-repeat: no-repeat;
-            border: 0.5px solid rgba(255,255,255,0.3);
-            box-sizing: border-box;
-            transition: left 0.3s, top 0.3s;
         }
         
-        .controls { margin-top: 15px; display: flex; flex-direction: column; align-items: center; gap: 10px; }
-        .btn-row { display: flex; gap: 10px; }
+        .controls { margin-top: 15px; display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; padding-bottom: 30px;}
+        .btn { padding: 12px 20px; border-radius: 50px; border: none; font-weight: bold; color: white; cursor: pointer; }
+        .file-label { background: #e91e63; }
+        .shuffle-btn { background: #2196F3; }
+        .next-btn { background: #ff9800; }
         input[type="file"] { display: none; }
-        .custom-file-upload {
-            padding: 10px 20px; background: #e91e63; border-radius: 50px; cursor: pointer; font-weight: bold;
-        }
-        .shuffle-btn { padding: 10px 30px; background: #2196F3; border: none; color: white; border-radius: 50px; font-weight: bold; }
     </style>
 </head>
 <body>
-    <h1>Poster Puzzle</h1>
-    
-    <div class="controls">
-        <label class="custom-file-upload">
-            <input type="file" accept="image/*" onchange="loadImage(this)">
-            📸 画像を選ぶ
-        </label>
-    </div>
-
-    <div id="game-container"></div>
-    
-    <div class="controls">
-        <div class="btn-row">
-            <button class="shuffle-btn" onclick="shuffleBoard()">バラバラにする</button>
+    <div class="header">
+        <h1>Custom Aspect Puzzle</h1>
+        <div class="difficulty-selector">
+            <button class="diff-btn" onclick="changeDifficulty(3, this)">初級</button>
+            <button class="diff-btn active" onclick="changeDifficulty(4, this)">中級</button>
+            <button class="diff-btn" onclick="changeDifficulty(5, this)">上級</button>
         </div>
     </div>
 
+    <div id="game-outer">
+        <div id="game-container"></div>
+    </div>
+    
+    <div class="controls">
+        <label class="btn file-label"><input type="file" accept="image/*" onchange="handleFile(this)">📸 写真を選ぶ</label>
+        <button class="btn shuffle-btn" onclick="shuffleBoard()">バラバラにする</button>
+        <button class="btn next-btn" onclick="loadRandomImage()">次の画像</button>
+    </div>
+
     <script>
-        let size = 3; // 縦長なので3x4くらいがちょうどいい
-        let rows = 4;
-        let cols = 3;
-        let currentImgUrl = "https://picsum.photos/300/400"; // 初期画像
+        let size = 4;
+        let img = new Image();
         const container = document.getElementById('game-container');
         let tiles = [];
         let draggedTile = null;
 
-        function loadImage(input) {
+        function loadRandomImage() {
+            // LoremFlickrからランダムな鳥画像を読み込む
+            img.src = `https://loremflickr.com/800/1000/bird?random=${Math.random()}`;
+        }
+
+        function handleFile(input) {
             if (input.files && input.files[0]) {
                 const reader = new FileReader();
-                reader.onload = function(e) {
-                    currentImgUrl = e.target.result;
-                    initBoard();
-                };
+                reader.onload = (e) => { img.src = e.target.result; };
                 reader.readAsDataURL(input.files[0]);
             }
+        }
+
+        img.onload = function() {
+            adjustContainerSize();
+            initBoard();
+        };
+
+        function adjustContainerSize() {
+            const outer = document.getElementById('game-outer');
+            const maxWidth = outer.clientWidth;
+            const maxHeight = outer.clientHeight;
+            const imgRatio = img.width / img.height;
+            const areaRatio = maxWidth / maxHeight;
+
+            let finalW, finalH;
+            if (imgRatio > areaRatio) {
+                finalW = maxWidth;
+                finalH = maxWidth / imgRatio;
+            } else {
+                finalH = maxHeight;
+                finalW = maxHeight * imgRatio;
+            }
+            container.style.width = finalW + 'px';
+            container.style.height = finalH + 'px';
         }
 
         function initBoard() {
             container.innerHTML = '';
             tiles = [];
-            const tileW = 100 / cols;
-            const tileH = 100 / rows;
-            
-            for (let i = 0; i < cols * rows; i++) {
+            for (let i = 0; i < size * size; i++) {
                 const tile = document.createElement('div');
                 tile.className = 'tile';
-                const x = i % cols; const y = Math.floor(i / cols);
+                const x = i % size; const y = Math.floor(i / size);
                 
-                tile.style.width = tileW + '%';
-                tile.style.height = tileH + '%';
-                tile.dataset.currentX = x;
-                tile.dataset.currentY = y;
-                tile.dataset.correctX = x;
-                tile.dataset.correctY = y;
+                tile.style.width = (100 / size) + '%';
+                tile.style.height = (100 / size) + '%';
+                tile.dataset.currentX = x; tile.dataset.currentY = y;
+                tile.dataset.correctX = x; tile.dataset.correctY = y;
                 
                 updateTilePosition(tile);
-                tile.style.backgroundImage = `url('${currentImgUrl}')`;
-                tile.style.backgroundSize = `${cols * 100}% ${rows * 100}%`;
-                tile.style.backgroundPosition = `${(x / (cols - 1)) * 100}% ${(y / (rows - 1)) * 100}%`;
+                tile.style.backgroundImage = `url('${img.src}')`;
+                tile.style.backgroundSize = (size * 100) + '%';
+                tile.style.backgroundPosition = `${(x / (size - 1)) * 100}% ${(y / (size - 1)) * 100}%`;
 
                 tile.addEventListener('touchstart', handleTouchStart, {passive: false});
                 tile.addEventListener('touchmove', handleTouchMove, {passive: false});
@@ -109,14 +134,22 @@
             }
         }
 
+        function changeDifficulty(s, btn) {
+            size = s;
+            document.querySelectorAll('.diff-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            initBoard();
+        }
+
         function updateTilePosition(tile) {
-            tile.style.left = (tile.dataset.currentX * (100 / cols)) + '%';
-            tile.style.top = (tile.dataset.currentY * (100 / rows)) + '%';
+            tile.style.left = (tile.dataset.currentX * (100 / size)) + '%';
+            tile.style.top = (tile.dataset.currentY * (100 / size)) + '%';
         }
 
         function handleTouchStart(e) {
             draggedTile = e.target;
             draggedTile.style.zIndex = 1000;
+            draggedTile.style.transition = 'none';
         }
 
         function handleTouchMove(e) {
@@ -130,27 +163,25 @@
         function handleTouchEnd(e) {
             const touch = e.changedTouches[0];
             const rect = container.getBoundingClientRect();
-            const x = Math.floor((touch.clientX - rect.left) / (rect.width / cols));
-            const y = Math.floor((touch.clientY - rect.top) / (rect.height / rows));
+            const x = Math.floor((touch.clientX - rect.left) / (rect.width / size));
+            const y = Math.floor((touch.clientY - rect.top) / (rect.height / size));
 
             const targetTile = tiles.find(t => t.dataset.currentX == x && t.dataset.currentY == y && t !== draggedTile);
-
-            if (targetTile && x >= 0 && x < cols && y >= 0 && y < rows) {
-                const tempX = draggedTile.dataset.currentX;
-                const tempY = draggedTile.dataset.currentY;
+            draggedTile.style.transition = 'all 0.3s';
+            
+            if (targetTile && x >= 0 && x < size && y >= 0 && y < size) {
+                const tx = draggedTile.dataset.currentX; const ty = draggedTile.dataset.currentY;
                 draggedTile.dataset.currentX = targetTile.dataset.currentX;
                 draggedTile.dataset.currentY = targetTile.dataset.currentY;
-                targetTile.dataset.currentX = tempX;
-                targetTile.dataset.currentY = tempY;
+                targetTile.dataset.currentX = tx; targetTile.dataset.currentY = ty;
             }
-
             tiles.forEach(updateTilePosition);
             draggedTile.style.zIndex = 1;
             draggedTile = null;
         }
 
         function shuffleBoard() {
-            for (let i = 0; i < 30; i++) {
+            for (let i = 0; i < size * size * 2; i++) {
                 const t1 = tiles[Math.floor(Math.random() * tiles.length)];
                 const t2 = tiles[Math.floor(Math.random() * tiles.length)];
                 const tx = t1.dataset.currentX; const ty = t1.dataset.currentY;
@@ -160,7 +191,7 @@
             tiles.forEach(updateTilePosition);
         }
 
-        initBoard();
+        loadRandomImage();
     </script>
 </body>
 </html>
