@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>AIスライドパズル</title>
+    <style>
+        body { font-family: sans-serif; display: flex; flex-direction: column; align-items: center; background: #f0f2f5; }
+        #game-container { position: relative; margin-top: 20px; border: 5px solid #333; border-radius: 8px; background: #ccc; }
+        .tile {
+            position: absolute; width: 100px; height: 100px;
+            background-image: url('https://picsum.photos/400/400'); /* ランダムな画像 */
+            background-size: 400px 400px;
+            border: 1px solid #fff; box-sizing: border-box;
+            transition: all 0.2s; cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            color: white; font-weight: bold; text-shadow: 1px 1px 2px black;
+        }
+        .controls { margin-top: 20px; }
+        button { padding: 10px 20px; font-size: 16px; cursor: pointer; background: #007bff; color: white; border: none; border-radius: 5px; }
+    </style>
+</head>
+<body>
+    <h1>スライドパズル</h1>
+    <div id="game-container" style="width: 400px; height: 400px;"></div>
+    <div class="controls">
+        <button onclick="shuffleBoard()">シャッフルして開始</button>
+    </div>
+
+    <script>
+        const size = 4; // 4x4
+        const container = document.getElementById('game-container');
+        let tiles = [];
+        let emptyPos = { x: 3, y: 3 };
+
+        // ボードの初期化
+        function initBoard() {
+            tiles = [];
+            container.innerHTML = '';
+            for (let i = 0; i < size * size - 1; i++) {
+                const tile = document.createElement('div');
+                tile.className = 'tile';
+                const x = i % size;
+                const y = Math.floor(i / size);
+                tile.style.left = (x * 100) + 'px';
+                tile.style.top = (y * 100) + 'px';
+                tile.style.backgroundPosition = `-${x * 100}px -${y * 100}px`;
+                tile.dataset.x = x;
+                tile.dataset.y = y;
+                tile.onclick = () => moveTile(tile);
+                container.appendChild(tile);
+                tiles.push(tile);
+            }
+        }
+
+        // タイルを動かす
+        function moveTile(tile) {
+            const tx = parseInt(tile.dataset.x);
+            const ty = parseInt(tile.dataset.y);
+            if (Math.abs(tx - emptyPos.x) + Math.abs(ty - emptyPos.y) === 1) {
+                const tempX = emptyPos.x;
+                const tempY = emptyPos.y;
+                emptyPos.x = tx;
+                emptyPos.y = ty;
+                tile.dataset.x = tempX;
+                tile.dataset.y = tempY;
+                tile.style.left = (tempX * 100) + 'px';
+                tile.style.top = (tempY * 100) + 'px';
+                checkWin();
+            }
+        }
+
+        // シャッフル（適当に動かす）
+        function shuffleBoard() {
+            for (let i = 0; i < 500; i++) {
+                const neighbors = tiles.filter(t => 
+                    Math.abs(parseInt(t.dataset.x) - emptyPos.x) + Math.abs(parseInt(t.dataset.y) - emptyPos.y) === 1
+                );
+                moveTile(neighbors[Math.floor(Math.random() * neighbors.length)]);
+            }
+        }
+
+        function checkWin() {
+            // 簡易的なクリア判定はここに追加可能
+        }
+
+        initBoard();
+    </script>
+</body>
+</html>
