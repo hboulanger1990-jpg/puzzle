@@ -3,106 +3,102 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>鳥パズル・コンプリート版</title>
+    <title>縦長対応・マイフォトパズル</title>
     <style>
         body { 
             margin: 0; padding: 0; font-family: sans-serif; 
             display: flex; flex-direction: column; align-items: center; 
-            background: #121212; color: white; height: 100vh; overflow: hidden;
+            background: #1a1a1a; color: white; min-height: 100vh;
         }
-        h1 { font-size: 1.2rem; margin: 10px 0; color: #ffeb3b; }
+        h1 { font-size: 1.2rem; margin: 10px 0; }
         
-        .difficulty-selector { margin-bottom: 10px; display: flex; gap: 8px; }
-        .diff-btn { 
-            padding: 6px 12px; border-radius: 20px; border: 2px solid #555;
-            background: #333; color: white; font-size: 12px; cursor: pointer;
-        }
-        .diff-btn.active { border-color: #ffeb3b; background: #555; color: #ffeb3b; }
-
+        /* 縦長に合わせたコンテナ設定（幅300px：高さ400pxの比率） */
         #game-container { 
-            position: relative; width: 90vw; height: 90vw; 
-            max-width: 400px; max-height: 400px; 
-            border: 4px solid #fff; border-radius: 10px; background: #333; 
+            position: relative; 
+            width: 80vw; 
+            height: 106.6vw; /* 3:4の比率 */
+            max-width: 330px; 
+            max-height: 440px; 
+            border: 4px solid #fff; border-radius: 10px; 
+            background: #333; overflow: hidden;
         }
         .tile {
             position: absolute;
-            background-size: 0 0; /* JSで設定 */
-            border: 0.5px solid rgba(255,255,255,0.2); 
-            box-sizing: border-box; cursor: grab; transition: left 0.3s, top 0.3s;
+            background-repeat: no-repeat;
+            border: 0.5px solid rgba(255,255,255,0.3);
+            box-sizing: border-box;
+            transition: left 0.3s, top 0.3s;
         }
-        .tile:active { cursor: grabbing; z-index: 1000 !important; transform: scale(1.05); }
         
-        .controls { margin-top: 20px; display: flex; gap: 10px; }
-        button.main-btn { 
-            padding: 12px 25px; font-size: 16px; cursor: pointer; 
-            color: white; border: none; border-radius: 50px; 
-            font-weight: bold; box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        .controls { margin-top: 15px; display: flex; flex-direction: column; align-items: center; gap: 10px; }
+        .btn-row { display: flex; gap: 10px; }
+        input[type="file"] { display: none; }
+        .custom-file-upload {
+            padding: 10px 20px; background: #e91e63; border-radius: 50px; cursor: pointer; font-weight: bold;
         }
-        .shuffle-btn { background: #2196F3; }
-        .next-btn { background: #ff9800; }
-
-        /* クリア演出 */
-        #clear-message {
-            position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            background: rgba(0,0,0,0.8); color: #ffeb3b; padding: 20px 40px;
-            border-radius: 20px; font-size: 24px; font-weight: bold;
-            display: none; z-index: 2000; text-align: center; pointer-events: none;
-        }
+        .shuffle-btn { padding: 10px 30px; background: #2196F3; border: none; color: white; border-radius: 50px; font-weight: bold; }
     </style>
 </head>
 <body>
-    <h1>Bird Swap Puzzle</h1>
+    <h1>Poster Puzzle</h1>
     
-    <div class="difficulty-selector">
-        <button class="diff-btn" onclick="changeDifficulty(3, this)">初級</button>
-        <button class="diff-btn active" onclick="changeDifficulty(4, this)">中級</button>
-        <button class="diff-btn" onclick="changeDifficulty(5, this)">上級</button>
+    <div class="controls">
+        <label class="custom-file-upload">
+            <input type="file" accept="image/*" onchange="loadImage(this)">
+            📸 画像を選ぶ
+        </label>
     </div>
 
     <div id="game-container"></div>
-    <div id="clear-message">CLEAR!! 🎉<br><span style="font-size: 14px;">次の鳥を連れてきます...</span></div>
     
     <div class="controls">
-        <button class="main-btn shuffle-btn" onclick="shuffleBoard()">バラバラにする</button>
-        <button class="main-btn next-btn" onclick="nextImage()">次の画像へ</button>
+        <div class="btn-row">
+            <button class="shuffle-btn" onclick="shuffleBoard()">バラバラにする</button>
+        </div>
     </div>
 
     <script>
-        let size = 4;
-        let currentImgUrl = "";
+        let size = 3; // 縦長なので3x4くらいがちょうどいい
+        let rows = 4;
+        let cols = 3;
+        let currentImgUrl = "https://picsum.photos/300/400"; // 初期画像
         const container = document.getElementById('game-container');
-        const clearMsg = document.getElementById('clear-message');
         let tiles = [];
         let draggedTile = null;
 
-        function nextImage() {
-            // ランダムな数値をつけてキャッシュを回避し、新しい画像を取得
-            currentImgUrl = `https://loremflickr.com/600/600/bird?random=${Math.random()}`;
-            initBoard();
+        function loadImage(input) {
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    currentImgUrl = e.target.result;
+                    initBoard();
+                };
+                reader.readAsDataURL(input.files[0]);
+            }
         }
 
         function initBoard() {
             container.innerHTML = '';
             tiles = [];
-            const tileSize = 100 / size;
-            if(!currentImgUrl) currentImgUrl = `https://loremflickr.com/600/600/bird?random=1`;
+            const tileW = 100 / cols;
+            const tileH = 100 / rows;
             
-            for (let i = 0; i < size * size; i++) {
+            for (let i = 0; i < cols * rows; i++) {
                 const tile = document.createElement('div');
                 tile.className = 'tile';
-                const x = i % size; const y = Math.floor(i / size);
+                const x = i % cols; const y = Math.floor(i / cols);
                 
-                tile.style.width = tileSize + '%';
-                tile.style.height = tileSize + '%';
-                tile.dataset.correctX = x;
-                tile.dataset.correctY = y;
+                tile.style.width = tileW + '%';
+                tile.style.height = tileH + '%';
                 tile.dataset.currentX = x;
                 tile.dataset.currentY = y;
+                tile.dataset.correctX = x;
+                tile.dataset.correctY = y;
                 
                 updateTilePosition(tile);
                 tile.style.backgroundImage = `url('${currentImgUrl}')`;
-                tile.style.backgroundSize = (size * 100) + '%';
-                tile.style.backgroundPosition = `${(x / (size - 1)) * 100}% ${(y / (size - 1)) * 100}%`;
+                tile.style.backgroundSize = `${cols * 100}% ${rows * 100}%`;
+                tile.style.backgroundPosition = `${(x / (cols - 1)) * 100}% ${(y / (rows - 1)) * 100}%`;
 
                 tile.addEventListener('touchstart', handleTouchStart, {passive: false});
                 tile.addEventListener('touchmove', handleTouchMove, {passive: false});
@@ -114,41 +110,32 @@
         }
 
         function updateTilePosition(tile) {
-            const tileSize = 100 / size;
-            tile.style.left = (tile.dataset.currentX * tileSize) + '%';
-            tile.style.top = (tile.dataset.currentY * tileSize) + '%';
-        }
-
-        function changeDifficulty(newSize, btnElement) {
-            size = newSize;
-            document.querySelectorAll('.diff-btn').forEach(b => b.classList.remove('active'));
-            btnElement.classList.add('active');
-            initBoard();
+            tile.style.left = (tile.dataset.currentX * (100 / cols)) + '%';
+            tile.style.top = (tile.dataset.currentY * (100 / rows)) + '%';
         }
 
         function handleTouchStart(e) {
             draggedTile = e.target;
-            draggedTile.style.transition = 'none';
             draggedTile.style.zIndex = 1000;
         }
 
         function handleTouchMove(e) {
             e.preventDefault();
             const touch = e.touches[0];
-            const containerRect = container.getBoundingClientRect();
-            draggedTile.style.left = (touch.clientX - containerRect.left - draggedTile.offsetWidth/2) + 'px';
-            draggedTile.style.top = (touch.clientY - containerRect.top - draggedTile.offsetHeight/2) + 'px';
+            const rect = container.getBoundingClientRect();
+            draggedTile.style.left = (touch.clientX - rect.left - draggedTile.offsetWidth/2) + 'px';
+            draggedTile.style.top = (touch.clientY - rect.top - draggedTile.offsetHeight/2) + 'px';
         }
 
         function handleTouchEnd(e) {
             const touch = e.changedTouches[0];
-            const containerRect = container.getBoundingClientRect();
-            const x = Math.floor((touch.clientX - containerRect.left) / (containerRect.width / size));
-            const y = Math.floor((touch.clientY - containerRect.top) / (containerRect.height / size));
+            const rect = container.getBoundingClientRect();
+            const x = Math.floor((touch.clientX - rect.left) / (rect.width / cols));
+            const y = Math.floor((touch.clientY - rect.top) / (rect.height / rows));
+
             const targetTile = tiles.find(t => t.dataset.currentX == x && t.dataset.currentY == y && t !== draggedTile);
 
-            draggedTile.style.transition = 'all 0.3s ease-out';
-            if (targetTile && x >= 0 && x < size && y >= 0 && y < size) {
+            if (targetTile && x >= 0 && x < cols && y >= 0 && y < rows) {
                 const tempX = draggedTile.dataset.currentX;
                 const tempY = draggedTile.dataset.currentY;
                 draggedTile.dataset.currentX = targetTile.dataset.currentX;
@@ -157,27 +144,13 @@
                 targetTile.dataset.currentY = tempY;
             }
 
-            setTimeout(() => {
-                tiles.forEach(updateTilePosition);
-                if(draggedTile) draggedTile.style.zIndex = 1;
-                draggedTile = null;
-                checkClear();
-            }, 10);
-        }
-
-        function checkClear() {
-            const isAllCorrect = tiles.every(t => t.dataset.currentX == t.dataset.correctX && t.dataset.currentY == t.dataset.correctY);
-            if (isAllCorrect) {
-                clearMsg.style.display = 'block';
-                setTimeout(() => {
-                    clearMsg.style.display = 'none';
-                    nextImage(); // クリアしたら次の画像へ
-                }, 2000);
-            }
+            tiles.forEach(updateTilePosition);
+            draggedTile.style.zIndex = 1;
+            draggedTile = null;
         }
 
         function shuffleBoard() {
-            for (let i = 0; i < size * size * 2; i++) {
+            for (let i = 0; i < 30; i++) {
                 const t1 = tiles[Math.floor(Math.random() * tiles.length)];
                 const t2 = tiles[Math.floor(Math.random() * tiles.length)];
                 const tx = t1.dataset.currentX; const ty = t1.dataset.currentY;
@@ -187,7 +160,7 @@
             tiles.forEach(updateTilePosition);
         }
 
-        nextImage();
+        initBoard();
     </script>
 </body>
 </html>
