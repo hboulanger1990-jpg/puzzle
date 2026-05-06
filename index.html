@@ -2,50 +2,67 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>万能・比率固定パズル</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Poster Puzzle Pro</title>
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="mobile-web-app-capable" content="yes">
+    
     <style>
         body { 
             margin: 0; padding: 0; font-family: sans-serif; 
             display: flex; flex-direction: column; align-items: center; 
-            background: #121212; color: white; min-height: 100vh;
+            background: #121212; color: white; height: 100vh; overflow: hidden;
         }
-        .header { width: 100%; padding: 10px; display: flex; flex-direction: column; align-items: center; background: #000; }
-        h1 { font-size: 1rem; margin: 5px 0; color: #ffeb3b; }
+        .header { width: 100%; padding-top: 10px; display: flex; flex-direction: column; align-items: center; }
+        h1 { font-size: 1.1rem; margin: 5px 0; color: #ffeb3b; }
         
-        .difficulty-selector { margin: 10px 0; display: flex; gap: 5px; }
+        .difficulty-selector { margin-bottom: 5px; display: flex; gap: 5px; }
         .diff-btn { 
-            padding: 6px 12px; border-radius: 15px; border: 1px solid #555;
-            background: #333; color: white; font-size: 11px; cursor: pointer;
+            padding: 5px 10px; border-radius: 15px; border: 1px solid #555;
+            background: #333; color: white; font-size: 11px;
         }
-        .diff-btn.active { border-color: #ffeb3b; color: #ffeb3b; background: #444; }
+        .diff-btn.active { border-color: #ffeb3b; color: #ffeb3b; }
 
         #game-outer { 
-            width: 95vw; height: 70vh; /* 最大表示エリア */
-            display: flex; justify-content: center; align-items: center;
+            flex: 1; width: 95vw; display: flex; justify-content: center; align-items: center;
         }
         #game-container { 
-            position: relative; 
-            border: 3px solid #fff; border-radius: 5px; background: #333;
-            box-shadow: 0 0 20px rgba(0,0,0,0.5);
+            position: relative; border: 3px solid #fff; border-radius: 5px; background: #333;
         }
         .tile {
-            position: absolute; border: 0.5px solid rgba(255,255,255,0.3);
+            position: absolute; border: 0.3px solid rgba(255,255,255,0.4);
             box-sizing: border-box; transition: left 0.3s, top 0.3s;
             background-repeat: no-repeat;
         }
         
-        .controls { margin-top: 15px; display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; padding-bottom: 30px;}
-        .btn { padding: 12px 20px; border-radius: 50px; border: none; font-weight: bold; color: white; cursor: pointer; }
+        /* ボタンを横一列に並べるレイアウト */
+        .controls { 
+            width: 95%; display: flex; justify-content: center; gap: 8px; 
+            padding: 20px 0; padding-bottom: calc(20px + env(safe-area-inset-bottom));
+        }
+        .btn { 
+            flex: 1; padding: 12px 0; border-radius: 10px; border: none; 
+            font-weight: bold; color: white; font-size: 13px; text-align: center;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3); cursor: pointer;
+        }
         .file-label { background: #e91e63; }
         .shuffle-btn { background: #2196F3; }
         .next-btn { background: #ff9800; }
         input[type="file"] { display: none; }
+
+        /* クリア演出 */
+        #clear-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.7); display: none; flex-direction: column;
+            justify-content: center; align-items: center; z-index: 2000;
+        }
+        .congrats-text { font-size: 2.5rem; font-weight: bold; color: #ffeb3b; text-shadow: 0 0 20px gold; }
     </style>
 </head>
 <body>
     <div class="header">
-        <h1>Custom Aspect Puzzle</h1>
+        <h1>Poster Puzzle Pro</h1>
         <div class="difficulty-selector">
             <button class="diff-btn" onclick="changeDifficulty(3, this)">初級</button>
             <button class="diff-btn active" onclick="changeDifficulty(4, this)">中級</button>
@@ -58,25 +75,32 @@
     </div>
     
     <div class="controls">
-        <label class="btn file-label"><input type="file" accept="image/*" onchange="handleFile(this)">📸 写真を選ぶ</label>
-        <button class="btn shuffle-btn" onclick="shuffleBoard()">バラバラにする</button>
-        <button class="btn next-btn" onclick="loadRandomImage()">次の画像</button>
+        <label class="btn file-label"><input type="file" accept="image/*" onchange="handleFile(this)">写真選択</label>
+        <button class="btn shuffle-btn" onclick="shuffleBoard()">シャッフル</button>
+        <button class="btn next-btn" onclick="loadRandomImage()">次の鳥</button>
+    </div>
+
+    <div id="clear-overlay">
+        <div class="congrats-text">おめでとう！🎉</div>
+        <p>正解です！</p>
     </div>
 
     <script>
         let size = 4;
         let img = new Image();
         const container = document.getElementById('game-container');
+        const overlay = document.getElementById('clear-overlay');
         let tiles = [];
-        let draggedTile = null;
+        let isShuffled = false;
 
         function loadRandomImage() {
-            // LoremFlickrからランダムな鳥画像を読み込む
+            isShuffled = false;
             img.src = `https://loremflickr.com/800/1000/bird?random=${Math.random()}`;
         }
 
         function handleFile(input) {
             if (input.files && input.files[0]) {
+                isShuffled = false;
                 const reader = new FileReader();
                 reader.onload = (e) => { img.src = e.target.result; };
                 reader.readAsDataURL(input.files[0]);
@@ -94,15 +118,9 @@
             const maxHeight = outer.clientHeight;
             const imgRatio = img.width / img.height;
             const areaRatio = maxWidth / maxHeight;
-
             let finalW, finalH;
-            if (imgRatio > areaRatio) {
-                finalW = maxWidth;
-                finalH = maxWidth / imgRatio;
-            } else {
-                finalH = maxHeight;
-                finalW = maxHeight * imgRatio;
-            }
+            if (imgRatio > areaRatio) { finalW = maxWidth; finalH = maxWidth / imgRatio; }
+            else { finalH = maxHeight; finalW = maxHeight * imgRatio; }
             container.style.width = finalW + 'px';
             container.style.height = finalH + 'px';
         }
@@ -114,31 +132,20 @@
                 const tile = document.createElement('div');
                 tile.className = 'tile';
                 const x = i % size; const y = Math.floor(i / size);
-                
                 tile.style.width = (100 / size) + '%';
                 tile.style.height = (100 / size) + '%';
                 tile.dataset.currentX = x; tile.dataset.currentY = y;
                 tile.dataset.correctX = x; tile.dataset.correctY = y;
-                
                 updateTilePosition(tile);
                 tile.style.backgroundImage = `url('${img.src}')`;
                 tile.style.backgroundSize = (size * 100) + '%';
                 tile.style.backgroundPosition = `${(x / (size - 1)) * 100}% ${(y / (size - 1)) * 100}%`;
-
-                tile.addEventListener('touchstart', handleTouchStart, {passive: false});
-                tile.addEventListener('touchmove', handleTouchMove, {passive: false});
-                tile.addEventListener('touchend', handleTouchEnd, {passive: false});
-
+                tile.addEventListener('touchstart', handleStart, {passive: false});
+                tile.addEventListener('touchmove', handleMove, {passive: false});
+                tile.addEventListener('touchend', handleEnd, {passive: false});
                 container.appendChild(tile);
                 tiles.push(tile);
             }
-        }
-
-        function changeDifficulty(s, btn) {
-            size = s;
-            document.querySelectorAll('.diff-btn').forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-            initBoard();
         }
 
         function updateTilePosition(tile) {
@@ -146,29 +153,22 @@
             tile.style.top = (tile.dataset.currentY * (100 / size)) + '%';
         }
 
-        function handleTouchStart(e) {
-            draggedTile = e.target;
-            draggedTile.style.zIndex = 1000;
-            draggedTile.style.transition = 'none';
-        }
-
-        function handleTouchMove(e) {
+        let draggedTile = null;
+        function handleStart(e) { draggedTile = e.target; draggedTile.style.zIndex = 1000; draggedTile.style.transition = 'none'; }
+        function handleMove(e) {
             e.preventDefault();
             const touch = e.touches[0];
             const rect = container.getBoundingClientRect();
             draggedTile.style.left = (touch.clientX - rect.left - draggedTile.offsetWidth/2) + 'px';
             draggedTile.style.top = (touch.clientY - rect.top - draggedTile.offsetHeight/2) + 'px';
         }
-
-        function handleTouchEnd(e) {
+        function handleEnd(e) {
             const touch = e.changedTouches[0];
             const rect = container.getBoundingClientRect();
             const x = Math.floor((touch.clientX - rect.left) / (rect.width / size));
             const y = Math.floor((touch.clientY - rect.top) / (rect.height / size));
-
             const targetTile = tiles.find(t => t.dataset.currentX == x && t.dataset.currentY == y && t !== draggedTile);
             draggedTile.style.transition = 'all 0.3s';
-            
             if (targetTile && x >= 0 && x < size && y >= 0 && y < size) {
                 const tx = draggedTile.dataset.currentX; const ty = draggedTile.dataset.currentY;
                 draggedTile.dataset.currentX = targetTile.dataset.currentX;
@@ -178,9 +178,19 @@
             tiles.forEach(updateTilePosition);
             draggedTile.style.zIndex = 1;
             draggedTile = null;
+            if(isShuffled) checkClear();
+        }
+
+        function checkClear() {
+            const clear = tiles.every(t => t.dataset.currentX == t.dataset.correctX && t.dataset.currentY == t.dataset.correctY);
+            if (clear) {
+                overlay.style.display = 'flex';
+                setTimeout(() => { overlay.style.display = 'none'; loadRandomImage(); }, 2500);
+            }
         }
 
         function shuffleBoard() {
+            isShuffled = true;
             for (let i = 0; i < size * size * 2; i++) {
                 const t1 = tiles[Math.floor(Math.random() * tiles.length)];
                 const t2 = tiles[Math.floor(Math.random() * tiles.length)];
@@ -189,6 +199,13 @@
                 t2.dataset.currentX = tx; t2.dataset.currentY = ty;
             }
             tiles.forEach(updateTilePosition);
+        }
+
+        function changeDifficulty(s, btn) {
+            size = s;
+            document.querySelectorAll('.diff-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            initBoard();
         }
 
         loadRandomImage();
