@@ -1,206 +1,514 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Poster Puzzle Pro</title>
-    <link rel="manifest" href="manifest.json">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    
-    <style>
-        body { 
-            margin: 0; padding: 0; font-family: sans-serif; 
-            display: flex; flex-direction: column; align-items: center; 
-            background: #121212; color: white; height: 100vh; overflow: hidden;
-        }
-        .header { width: 100%; padding-top: calc(10px + env(safe-area-inset-top)); display: flex; flex-direction: column; align-items: center; }
-        h1 { font-size: 1.1rem; margin: 5px 0; color: #ffeb3b; }
-        
-        .difficulty-selector { margin-bottom: 5px; display: flex; gap: 5px; }
-        .diff-btn { padding: 5px 10px; border-radius: 15px; border: 1px solid #555; background: #333; color: white; font-size: 11px; }
-        .diff-btn.active { border-color: #ffeb3b; color: #ffeb3b; }
+<meta charset="UTF-8">
+<meta name="viewport"
+content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
 
-        #game-outer { 
-            flex: 1; width: 95vw; 
-            display: flex; justify-content: center; 
-            align-items: center;
-            /* パズル本体を少し上に上げるために下部に余白を確保 */
-            margin-bottom: 20px; 
-        }
-        #game-container { position: relative; border: 3px solid #fff; border-radius: 5px; background: #333; }
-        .tile { position: absolute; border: 0.3px solid rgba(255,255,255,0.4); box-sizing: border-box; transition: left 0.3s, top 0.3s; background-repeat: no-repeat; }
-        
-        /* ボタンの位置を上に調整 */
-        .controls { 
-            width: 95%; display: flex; justify-content: center; gap: 8px; 
-            /* 下から約80px〜100px浮かせる設定 */
-            padding-bottom: calc(60px + env(safe-area-inset-bottom)); 
-        }
-        .btn { flex: 1; padding: 12px 0; border-radius: 10px; border: none; font-weight: bold; color: white; font-size: 13px; text-align: center; cursor: pointer; }
-        .file-label { background: #e91e63; }
-        .shuffle-btn { background: #2196F3; }
-        .next-btn { background: #ff9800; }
-        input[type="file"] { display: none; }
+<title>Poster Puzzle Pro</title>
 
-        #clear-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.7); display: none; flex-direction: column;
-            justify-content: center; align-items: center; z-index: 2000;
-        }
-        .congrats-text { font-size: 2.5rem; font-weight: bold; color: #ffeb3b; }
-    </style>
+<style>
+body{
+    margin:0;
+    padding:0;
+    font-family:sans-serif;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    background:#121212;
+    color:white;
+    height:100vh;
+    overflow:hidden;
+}
+
+.header{
+    width:100%;
+    padding-top:calc(10px + env(safe-area-inset-top));
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+}
+
+h1{
+    font-size:1.2rem;
+    margin:5px 0;
+    color:#ffeb3b;
+}
+
+.difficulty-selector{
+    margin-bottom:8px;
+    display:flex;
+    gap:8px;
+}
+
+/* 少し大きくした */
+.diff-btn{
+    padding:8px 16px;
+    border-radius:18px;
+    border:1px solid #555;
+    background:#333;
+    color:white;
+    font-size:14px;
+    cursor:pointer;
+}
+
+.diff-btn.active{
+    border-color:#ffeb3b;
+    color:#ffeb3b;
+}
+
+#game-outer{
+    flex:1;
+    width:95vw;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    margin-bottom:20px;
+}
+
+#game-container{
+    position:relative;
+    border:3px solid #fff;
+    border-radius:5px;
+    background:#333;
+    overflow:hidden;
+}
+
+.tile{
+    position:absolute;
+    border:1px solid rgba(255,255,255,0.2);
+    box-sizing:border-box;
+    transition:left 0.3s, top 0.3s;
+    background-repeat:no-repeat;
+}
+
+.controls{
+    width:95%;
+    display:flex;
+    justify-content:center;
+    gap:8px;
+    padding-bottom:calc(60px + env(safe-area-inset-bottom));
+}
+
+.btn{
+    flex:1;
+    padding:12px 0;
+    border-radius:10px;
+    border:none;
+    font-weight:bold;
+    color:white;
+    font-size:13px;
+    text-align:center;
+    cursor:pointer;
+}
+
+.file-label{
+    background:#e91e63;
+}
+
+.shuffle-btn{
+    background:#2196F3;
+}
+
+.next-btn{
+    background:#ff9800;
+}
+
+input[type="file"]{
+    display:none;
+}
+
+#clear-overlay{
+    position:fixed;
+    top:0;
+    left:0;
+    width:100%;
+    height:100%;
+    background:rgba(0,0,0,0.7);
+    display:none;
+    flex-direction:column;
+    justify-content:center;
+    align-items:center;
+    z-index:2000;
+}
+
+.congrats-text{
+    font-size:2.5rem;
+    font-weight:bold;
+    color:#ffeb3b;
+}
+
+#stage-label{
+    margin-top:4px;
+    font-size:14px;
+    color:#ccc;
+}
+</style>
 </head>
+
 <body>
-    <div class="header">
-        <h1>Poster Puzzle Pro</h1>
-        <div class="difficulty-selector">
-            <button class="diff-btn" onclick="changeDifficulty(3, this)">初級</button>
-            <button class="diff-btn active" onclick="changeDifficulty(4, this)">中級</button>
-            <button class="diff-btn" onclick="changeDifficulty(5, this)">上級</button>
-        </div>
+
+<div class="header">
+    <h1>Poster Puzzle Pro</h1>
+
+    <div class="difficulty-selector">
+        <button class="diff-btn" onclick="changeDifficulty(3, this)">初級</button>
+        <button class="diff-btn active" onclick="changeDifficulty(4, this)">中級</button>
+        <button class="diff-btn" onclick="changeDifficulty(5, this)">上級</button>
     </div>
 
-    <div id="game-outer">
-        <div id="game-container"></div>
-    </div>
-    
-    <div class="controls">
-        <label class="btn file-label"><input type="file" accept="image/*" onchange="handleFile(this)">写真選択</label>
-        <button class="btn shuffle-btn" onclick="shuffleBoard()">シャッフル</button>
-        <button class="btn next-btn" onclick="loadRandomImage()">次の鳥</button>
-    </div>
+    <div id="stage-label">ハシビロコウ ステージ</div>
+</div>
 
-    <div id="clear-overlay">
-        <div class="congrats-text">おめでとう！🎉</div>
-        <p>正解です！</p>
-    </div>
+<div id="game-outer">
+    <div id="game-container"></div>
+</div>
 
-    <script>
-        // --- 以前のロジックを維持（変更なし） ---
-        let size = 4;
-        let img = new Image();
-        const container = document.getElementById('game-container');
-        const overlay = document.getElementById('clear-overlay');
-        let tiles = [];
-        let isShuffled = false;
+<div class="controls">
+    <label class="btn file-label">
+        <input type="file" accept="image/*" onchange="handleFile(this)">
+        写真選択
+    </label>
 
-        function loadRandomImage() {
-            isShuffled = false;
-            img.src = `https://loremflickr.com/800/1000/bird?random=${Math.random()}`;
-        }
+    <button class="btn shuffle-btn" onclick="shuffleBoard()">
+        シャッフル
+    </button>
 
-        function handleFile(input) {
-            if (input.files && input.files[0]) {
-                isShuffled = false;
-                const reader = new FileReader();
-                reader.onload = (e) => { img.src = e.target.result; };
-                reader.readAsDataURL(input.files[0]);
-            }
-        }
+    <!-- 名称変更 -->
+    <button class="btn next-btn" onclick="loadNextImage()">
+        次の画像
+    </button>
+</div>
 
-        img.onload = function() {
-            adjustContainerSize();
-            initBoard();
+<div id="clear-overlay">
+    <div class="congrats-text">おめでとう！🎉</div>
+    <p>正解です！</p>
+</div>
+
+<script>
+let size = 4;
+let img = new Image();
+
+const container = document.getElementById('game-container');
+const overlay = document.getElementById('clear-overlay');
+const stageLabel = document.getElementById('stage-label');
+
+let tiles = [];
+let isShuffled = false;
+
+let clearCount = 0;
+
+/*
+    交互切り替え用
+    false = ハシビロコウ
+    true = トラ
+*/
+let tigerMode = false;
+
+/*
+    ネット画像
+*/
+const shoebillImages = [
+    'https://source.unsplash.com/800x1000/?shoebill',
+    'https://source.unsplash.com/800x1000/?shoebill,bird'
+];
+
+const tigerImages = [
+    'https://source.unsplash.com/800x1000/?tiger',
+    'https://source.unsplash.com/800x1000/?bengal-tiger'
+];
+
+function getRandom(arr){
+    return arr[Math.floor(Math.random() * arr.length)];
+}
+
+/*
+    次の画像読み込み
+*/
+function loadNextImage(){
+
+    if(tigerMode){
+        img.src = getRandom(tigerImages);
+        stageLabel.textContent = 'トラ ステージ';
+    }else{
+        img.src = getRandom(shoebillImages);
+        stageLabel.textContent = 'ハシビロコウ ステージ';
+    }
+}
+
+/*
+    手動画像
+*/
+function handleFile(input){
+
+    if(input.files && input.files[0]){
+
+        isShuffled = false;
+
+        const reader = new FileReader();
+
+        reader.onload = (e)=>{
+            img.src = e.target.result;
         };
 
-        function adjustContainerSize() {
-            const outer = document.getElementById('game-outer');
-            const maxWidth = outer.clientWidth;
-            const maxHeight = outer.clientHeight;
-            const imgRatio = img.width / img.height;
-            const areaRatio = maxWidth / maxHeight;
-            let finalW, finalH;
-            if (imgRatio > areaRatio) { finalW = maxWidth; finalH = maxWidth / imgRatio; }
-            else { finalH = maxHeight; finalW = maxHeight * imgRatio; }
-            container.style.width = finalW + 'px';
-            container.style.height = finalH + 'px';
+        reader.readAsDataURL(input.files[0]);
+    }
+}
+
+/*
+    画像ロード後
+*/
+img.onload = function(){
+
+    adjustContainerSize();
+
+    initBoard();
+
+    // 最初からシャッフル
+    shuffleBoard();
+};
+
+function adjustContainerSize(){
+
+    const outer = document.getElementById('game-outer');
+
+    const maxWidth = outer.clientWidth;
+    const maxHeight = outer.clientHeight;
+
+    const imgRatio = img.width / img.height;
+    const areaRatio = maxWidth / maxHeight;
+
+    let finalW, finalH;
+
+    if(imgRatio > areaRatio){
+        finalW = maxWidth;
+        finalH = maxWidth / imgRatio;
+    }else{
+        finalH = maxHeight;
+        finalW = maxHeight * imgRatio;
+    }
+
+    container.style.width = finalW + 'px';
+    container.style.height = finalH + 'px';
+}
+
+function initBoard(){
+
+    container.innerHTML = '';
+
+    tiles = [];
+
+    for(let i=0; i<size*size; i++){
+
+        const tile = document.createElement('div');
+
+        tile.className = 'tile';
+
+        const x = i % size;
+        const y = Math.floor(i / size);
+
+        tile.style.width = (100 / size) + '%';
+        tile.style.height = (100 / size) + '%';
+
+        tile.dataset.currentX = x;
+        tile.dataset.currentY = y;
+
+        tile.dataset.correctX = x;
+        tile.dataset.correctY = y;
+
+        updateTilePosition(tile);
+
+        tile.style.backgroundImage = `url('${img.src}')`;
+
+        tile.style.backgroundSize = (size * 100) + '%';
+
+        tile.style.backgroundPosition =
+            `${(x / (size - 1)) * 100}% ${(y / (size - 1)) * 100}%`;
+
+        tile.addEventListener('touchstart', handleStart, {passive:false});
+        tile.addEventListener('touchmove', handleMove, {passive:false});
+        tile.addEventListener('touchend', handleEnd, {passive:false});
+
+        container.appendChild(tile);
+
+        tiles.push(tile);
+    }
+}
+
+function updateTilePosition(tile){
+
+    tile.style.left =
+        (tile.dataset.currentX * (100 / size)) + '%';
+
+    tile.style.top =
+        (tile.dataset.currentY * (100 / size)) + '%';
+}
+
+let draggedTile = null;
+
+function handleStart(e){
+
+    draggedTile = e.target;
+
+    draggedTile.style.zIndex = 1000;
+    draggedTile.style.transition = 'none';
+}
+
+function handleMove(e){
+
+    e.preventDefault();
+
+    const touch = e.touches[0];
+
+    const rect = container.getBoundingClientRect();
+
+    const left = Math.max(
+        0,
+        Math.min(
+            touch.clientX - rect.left - draggedTile.offsetWidth / 2,
+            rect.width - draggedTile.offsetWidth
+        )
+    );
+
+    const top = Math.max(
+        0,
+        Math.min(
+            touch.clientY - rect.top - draggedTile.offsetHeight / 2,
+            rect.height - draggedTile.offsetHeight
+        )
+    );
+
+    draggedTile.style.left = left + 'px';
+    draggedTile.style.top = top + 'px';
+}
+
+function handleEnd(e){
+
+    const touch = e.changedTouches[0];
+
+    const rect = container.getBoundingClientRect();
+
+    const x = Math.floor(
+        (touch.clientX - rect.left) / (rect.width / size)
+    );
+
+    const y = Math.floor(
+        (touch.clientY - rect.top) / (rect.height / size)
+    );
+
+    const targetTile = tiles.find(
+        t =>
+        t.dataset.currentX == x &&
+        t.dataset.currentY == y &&
+        t !== draggedTile
+    );
+
+    draggedTile.style.transition = 'all 0.3s';
+
+    if(targetTile && x >=0 && x < size && y >=0 && y < size){
+
+        const tx = draggedTile.dataset.currentX;
+        const ty = draggedTile.dataset.currentY;
+
+        draggedTile.dataset.currentX = targetTile.dataset.currentX;
+        draggedTile.dataset.currentY = targetTile.dataset.currentY;
+
+        targetTile.dataset.currentX = tx;
+        targetTile.dataset.currentY = ty;
+    }
+
+    tiles.forEach(updateTilePosition);
+
+    draggedTile.style.zIndex = 1;
+
+    draggedTile = null;
+
+    if(isShuffled){
+        checkClear();
+    }
+}
+
+function checkClear(){
+
+    const clear = tiles.every(
+        t =>
+        t.dataset.currentX == t.dataset.correctX &&
+        t.dataset.currentY == t.dataset.correctY
+    );
+
+    if(clear){
+
+        clearCount++;
+
+        /*
+            1回クリアごとに交互切り替え
+        */
+        tigerMode = !tigerMode;
+
+        overlay.style.display = 'flex';
+
+        setTimeout(()=>{
+
+            overlay.style.display = 'none';
+
+            loadNextImage();
+
+        }, 2500);
+    }
+}
+
+function shuffleBoard(){
+
+    do{
+
+        for(let i=0; i<size*size*3; i++){
+
+            const t1 = tiles[Math.floor(Math.random() * tiles.length)];
+            const t2 = tiles[Math.floor(Math.random() * tiles.length)];
+
+            const tx = t1.dataset.currentX;
+            const ty = t1.dataset.currentY;
+
+            t1.dataset.currentX = t2.dataset.currentX;
+            t1.dataset.currentY = t2.dataset.currentY;
+
+            t2.dataset.currentX = tx;
+            t2.dataset.currentY = ty;
         }
 
-        function initBoard() {
-            container.innerHTML = '';
-            tiles = [];
-            for (let i = 0; i < size * size; i++) {
-                const tile = document.createElement('div');
-                tile.className = 'tile';
-                const x = i % size; const y = Math.floor(i / size);
-                tile.style.width = (100 / size) + '%';
-                tile.style.height = (100 / size) + '%';
-                tile.dataset.currentX = x; tile.dataset.currentY = y;
-                tile.dataset.correctX = x; tile.dataset.correctY = y;
-                updateTilePosition(tile);
-                tile.style.backgroundImage = `url('${img.src}')`;
-                tile.style.backgroundSize = (size * 100) + '%';
-                tile.style.backgroundPosition = `${(x / (size - 1)) * 100}% ${(y / (size - 1)) * 100}%`;
-                tile.addEventListener('touchstart', handleStart, {passive: false});
-                tile.addEventListener('touchmove', handleMove, {passive: false});
-                tile.addEventListener('touchend', handleEnd, {passive: false});
-                container.appendChild(tile);
-                tiles.push(tile);
-            }
-        }
+    }while(
+        tiles.every(
+            t =>
+            t.dataset.currentX == t.dataset.correctX &&
+            t.dataset.currentY == t.dataset.correctY
+        )
+    );
 
-        function updateTilePosition(tile) {
-            tile.style.left = (tile.dataset.currentX * (100 / size)) + '%';
-            tile.style.top = (tile.dataset.currentY * (100 / size)) + '%';
-        }
+    isShuffled = true;
 
-        let draggedTile = null;
-        function handleStart(e) { draggedTile = e.target; draggedTile.style.zIndex = 1000; draggedTile.style.transition = 'none'; }
-        function handleMove(e) {
-            e.preventDefault();
-            const touch = e.touches[0];
-            const rect = container.getBoundingClientRect();
-            draggedTile.style.left = (touch.clientX - rect.left - draggedTile.offsetWidth/2) + 'px';
-            draggedTile.style.top = (touch.clientY - rect.top - draggedTile.offsetHeight/2) + 'px';
-        }
-        function handleEnd(e) {
-            const touch = e.changedTouches[0];
-            const rect = container.getBoundingClientRect();
-            const x = Math.floor((touch.clientX - rect.left) / (rect.width / size));
-            const y = Math.floor((touch.clientY - rect.top) / (rect.height / size));
-            const targetTile = tiles.find(t => t.dataset.currentX == x && t.dataset.currentY == y && t !== draggedTile);
-            draggedTile.style.transition = 'all 0.3s';
-            if (targetTile && x >= 0 && x < size && y >= 0 && y < size) {
-                const tx = draggedTile.dataset.currentX; const ty = draggedTile.dataset.currentY;
-                draggedTile.dataset.currentX = targetTile.dataset.currentX;
-                draggedTile.dataset.currentY = targetTile.dataset.currentY;
-                targetTile.dataset.currentX = tx; targetTile.dataset.currentY = ty;
-            }
-            tiles.forEach(updateTilePosition);
-            draggedTile.style.zIndex = 1;
-            draggedTile = null;
-            if(isShuffled) checkClear();
-        }
+    tiles.forEach(updateTilePosition);
+}
 
-        function checkClear() {
-            const clear = tiles.every(t => t.dataset.currentX == t.dataset.correctX && t.dataset.currentY == t.dataset.correctY);
-            if (clear) {
-                overlay.style.display = 'flex';
-                setTimeout(() => { overlay.style.display = 'none'; loadRandomImage(); }, 2500);
-            }
-        }
+function changeDifficulty(s, btn){
 
-        function shuffleBoard() {
-            isShuffled = true;
-            for (let i = 0; i < size * size * 2; i++) {
-                const t1 = tiles[Math.floor(Math.random() * tiles.length)];
-                const t2 = tiles[Math.floor(Math.random() * tiles.length)];
-                const tx = t1.dataset.currentX; const ty = t1.dataset.currentY;
-                t1.dataset.currentX = t2.dataset.currentX; t1.dataset.currentY = t2.dataset.currentY;
-                t2.dataset.currentX = tx; t2.dataset.currentY = ty;
-            }
-            tiles.forEach(updateTilePosition);
-        }
+    size = s;
 
-        function changeDifficulty(s, btn) {
-            size = s;
-            document.querySelectorAll('.diff-btn').forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-            initBoard();
-        }
+    document
+        .querySelectorAll('.diff-btn')
+        .forEach(b => b.classList.remove('active'));
 
-        loadRandomImage();
-    </script>
+    btn.classList.add('active');
+
+    initBoard();
+
+    shuffleBoard();
+}
+
+/*
+    最初の画像
+*/
+loadNextImage();
+</script>
+
 </body>
 </html>
