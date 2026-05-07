@@ -50,6 +50,7 @@ h1{
     font-weight:bold;
     color:white;
     font-size:13px;
+
     display:flex;
     justify-content:center;
     align-items:center;
@@ -85,8 +86,6 @@ h1{
     border-radius:5px;
     background:#333;
     overflow:hidden;
-
-    /* スクロール防止 */
     touch-action:none;
 }
 
@@ -96,9 +95,13 @@ h1{
     box-sizing:border-box;
     background-repeat:no-repeat;
 
-    /* transformで軽量化 */
-    transition:transform 0.15s;
     will-change:transform;
+
+    transition:transform 0.12s ease-out;
+
+    backface-visibility:hidden;
+
+    transform:translate3d(0,0,0);
 }
 
 .controls{
@@ -192,7 +195,6 @@ let size = 4;
 
 let img = new Image();
 
-/* CORS対策 */
 img.crossOrigin = "anonymous";
 
 let tiles = [];
@@ -200,6 +202,11 @@ let tiles = [];
 let drag = null;
 
 let tigerMode = false;
+
+let raf = null;
+
+let dragX = 0;
+let dragY = 0;
 
 /* =========================
    DOM
@@ -278,6 +285,7 @@ function adjust(){
     const h = outer.clientHeight;
 
     const r = img.width / img.height;
+
     const ar = w / h;
 
     let fw, fh;
@@ -309,7 +317,8 @@ function init(){
 
     for(let i=0;i<size*size;i++){
 
-        const t = document.createElement("div");
+        const t =
+        document.createElement("div");
 
         t.className = "tile";
 
@@ -355,15 +364,33 @@ function init(){
 
 function render(){
 
+    const useAnim = size < 7;
+
     tiles.forEach(t=>{
 
+        if(useAnim){
+
+            t.style.transition =
+            "transform 0.12s ease-out";
+
+        }else{
+
+            t.style.transition = "none";
+        }
+
+        const x =
+        t.dataset.x * (100 / size);
+
+        const y =
+        t.dataset.y * (100 / size);
+
         t.style.transform =
-        `translate(${t.dataset.x*(100/size)}%, ${t.dataset.y*(100/size)}%)`;
+        `translate3d(${x}%, ${y}%, 0)`;
     });
 }
 
 /* =========================
-   操作開始
+   タッチ開始
 ========================= */
 
 function start(e){
@@ -371,6 +398,8 @@ function start(e){
     drag = e.target;
 
     drag.style.zIndex = 10;
+
+    drag.style.transition = "none";
 }
 
 /* =========================
@@ -388,31 +417,41 @@ function move(e){
     const rect =
     container.getBoundingClientRect();
 
-    const x =
+    dragX =
     touch.clientX -
     rect.left -
     drag.offsetWidth / 2;
 
-    const y =
+    dragY =
     touch.clientY -
     rect.top -
     drag.offsetHeight / 2;
 
-    drag.style.transition = "none";
+    if(raf)return;
 
-    drag.style.transform =
-    `translate(${x}px, ${y}px)`;
+    raf = requestAnimationFrame(()=>{
+
+        drag.style.transform =
+        `translate3d(${dragX}px, ${dragY}px, 0)`;
+
+        raf = null;
+    });
 }
 
 /* =========================
-   終了
+   タッチ終了
 ========================= */
 
 function end(e){
 
     if(!drag)return;
 
-    const touch = e.changedTouches[0];
+    cancelAnimationFrame(raf);
+
+    raf = null;
+
+    const touch =
+    e.changedTouches[0];
 
     const rect =
     container.getBoundingClientRect();
@@ -442,15 +481,20 @@ function end(e){
         let tx = drag.dataset.x;
         let ty = drag.dataset.y;
 
-        drag.dataset.x = target.dataset.x;
-        drag.dataset.y = target.dataset.y;
+        drag.dataset.x =
+        target.dataset.x;
+
+        drag.dataset.y =
+        target.dataset.y;
 
         target.dataset.x = tx;
         target.dataset.y = ty;
     }
 
+    drag.style.transition =
+    "transform 0.12s ease-out";
+
     drag.style.transform = "";
-    drag.style.transition = "";
 
     render();
 
@@ -501,10 +545,18 @@ function shuffleBoard(){
         for(let i=0;i<size*size*3;i++){
 
             const a =
-            tiles[Math.floor(Math.random()*tiles.length)];
+            tiles[
+                Math.floor(
+                    Math.random()*tiles.length
+                )
+            ];
 
             const b =
-            tiles[Math.floor(Math.random()*tiles.length)];
+            tiles[
+                Math.floor(
+                    Math.random()*tiles.length
+                )
+            ];
 
             let tx = a.dataset.x;
             let ty = a.dataset.y;
@@ -539,7 +591,9 @@ function changeDifficulty(s,btn){
 
     document
     .querySelectorAll(".diff-btn")
-    .forEach(b=>b.classList.remove("active"));
+    .forEach(b=>
+        b.classList.remove("active")
+    );
 
     btn.classList.add("active");
 
@@ -554,14 +608,17 @@ function changeDifficulty(s,btn){
 
 function handleFile(input){
 
-    const reader = new FileReader();
+    const reader =
+    new FileReader();
 
     reader.onload = e => {
 
         img.src = e.target.result;
     };
 
-    reader.readAsDataURL(input.files[0]);
+    reader.readAsDataURL(
+        input.files[0]
+    );
 }
 
 /* =========================
