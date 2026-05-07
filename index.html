@@ -2,13 +2,12 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport"
-content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
 
 <title>Poster Puzzle Pro</title>
 
 <style>
-body{
+body {
     margin:0;
     padding:0;
     font-family:sans-serif;
@@ -21,7 +20,7 @@ body{
     overflow:hidden;
 }
 
-.header{
+.header {
     width:100%;
     padding-top:calc(10px + env(safe-area-inset-top));
     display:flex;
@@ -29,35 +28,34 @@ body{
     align-items:center;
 }
 
-h1{
+h1 {
     font-size:1.2rem;
     margin:5px 0;
     color:#ffeb3b;
 }
 
-.difficulty-selector{
+.difficulty-selector {
     margin-bottom:8px;
     display:flex;
     gap:8px;
 }
 
-/* 少し大きくした */
-.diff-btn{
+/* 少し大きく */
+.diff-btn {
     padding:8px 16px;
     border-radius:18px;
     border:1px solid #555;
     background:#333;
     color:white;
     font-size:14px;
-    cursor:pointer;
 }
 
-.diff-btn.active{
+.diff-btn.active {
     border-color:#ffeb3b;
     color:#ffeb3b;
 }
 
-#game-outer{
+#game-outer {
     flex:1;
     width:95vw;
     display:flex;
@@ -66,7 +64,7 @@ h1{
     margin-bottom:20px;
 }
 
-#game-container{
+#game-container {
     position:relative;
     border:3px solid #fff;
     border-radius:5px;
@@ -74,7 +72,7 @@ h1{
     overflow:hidden;
 }
 
-.tile{
+.tile {
     position:absolute;
     border:1px solid rgba(255,255,255,0.2);
     box-sizing:border-box;
@@ -82,7 +80,7 @@ h1{
     background-repeat:no-repeat;
 }
 
-.controls{
+.controls {
     width:95%;
     display:flex;
     justify-content:center;
@@ -90,7 +88,7 @@ h1{
     padding-bottom:calc(60px + env(safe-area-inset-bottom));
 }
 
-.btn{
+.btn {
     flex:1;
     padding:12px 0;
     border-radius:10px;
@@ -98,27 +96,17 @@ h1{
     font-weight:bold;
     color:white;
     font-size:13px;
-    text-align:center;
-    cursor:pointer;
 }
 
-.file-label{
-    background:#e91e63;
-}
+.file-label { background:#e91e63; }
+.shuffle-btn { background:#2196F3; }
+.next-btn { background:#ff9800; }
 
-.shuffle-btn{
-    background:#2196F3;
-}
-
-.next-btn{
-    background:#ff9800;
-}
-
-input[type="file"]{
+input[type="file"] {
     display:none;
 }
 
-#clear-overlay{
+#clear-overlay {
     position:fixed;
     top:0;
     left:0;
@@ -132,16 +120,10 @@ input[type="file"]{
     z-index:2000;
 }
 
-.congrats-text{
+.congrats-text {
     font-size:2.5rem;
     font-weight:bold;
     color:#ffeb3b;
-}
-
-#stage-label{
-    margin-top:4px;
-    font-size:14px;
-    color:#ccc;
 }
 </style>
 </head>
@@ -155,9 +137,8 @@ input[type="file"]{
         <button class="diff-btn" onclick="changeDifficulty(3, this)">初級</button>
         <button class="diff-btn active" onclick="changeDifficulty(4, this)">中級</button>
         <button class="diff-btn" onclick="changeDifficulty(5, this)">上級</button>
+        <button class="diff-btn" onclick="changeDifficulty(10, this)">超上級</button>
     </div>
-
-    <div id="stage-label">ハシビロコウ ステージ</div>
 </div>
 
 <div id="game-outer">
@@ -170,84 +151,90 @@ input[type="file"]{
         写真選択
     </label>
 
-    <button class="btn shuffle-btn" onclick="shuffleBoard()">
-        シャッフル
-    </button>
+    <button class="btn shuffle-btn" onclick="shuffleBoard()">シャッフル</button>
 
-    <!-- 名称変更 -->
-    <button class="btn next-btn" onclick="loadNextImage()">
-        次の画像
-    </button>
+    <button class="btn next-btn" onclick="loadNextImage()">次の画像</button>
 </div>
 
 <div id="clear-overlay">
     <div class="congrats-text">おめでとう！🎉</div>
-    <p>正解です！</p>
 </div>
 
 <script>
+
+/* =========================
+   Pixabay APIキー
+========================= */
+const PIXABAY_KEY = "55756665-23bacf1941f5fd32e51bbc3c3";
+
+/* =========================
+   ゲーム状態
+========================= */
 let size = 4;
 let img = new Image();
-
-const container = document.getElementById('game-container');
-const overlay = document.getElementById('clear-overlay');
-const stageLabel = document.getElementById('stage-label');
-
 let tiles = [];
 let isShuffled = false;
 
-let clearCount = 0;
-
-/*
-    交互切り替え用
-    false = ハシビロコウ
-    true = トラ
-*/
+/* 交互切替 */
 let tigerMode = false;
 
-/*
-    ネット画像
-*/
-const shoebillImages = [
-    'https://source.unsplash.com/800x1000/?shoebill',
-    'https://source.unsplash.com/800x1000/?shoebill,bird'
-];
+/* =========================
+   DOM
+========================= */
+const container = document.getElementById("game-container");
+const overlay = document.getElementById("clear-overlay");
 
-const tigerImages = [
-    'https://source.unsplash.com/800x1000/?tiger',
-    'https://source.unsplash.com/800x1000/?bengal-tiger'
-];
+/* =========================
+   Pixabay画像取得
+========================= */
+function loadPixabayImage(type){
 
-function getRandom(arr){
-    return arr[Math.floor(Math.random() * arr.length)];
+    const query = (type === "shoebill")
+        ? "shoebill bird stork"
+        : "tiger bengal tiger";
+
+    fetch(
+        `https://pixabay.com/api/?key=${PIXABAY_KEY}&q=${encodeURIComponent(query)}&image_type=photo&safesearch=true&per_page=50`
+    )
+    .then(res => res.json())
+    .then(data => {
+
+        if(!data.hits || data.hits.length === 0){
+            console.log("画像なし");
+            return;
+        }
+
+        const hit = data.hits[Math.floor(Math.random() * data.hits.length)];
+
+        img.src = hit.webformatURL;
+    })
+    .catch(err => console.log(err));
 }
 
-/*
-    次の画像読み込み
-*/
+/* =========================
+   次の画像（交互）
+========================= */
 function loadNextImage(){
 
     if(tigerMode){
-        img.src = getRandom(tigerImages);
-        stageLabel.textContent = 'トラ ステージ';
+        loadPixabayImage("tiger");
     }else{
-        img.src = getRandom(shoebillImages);
-        stageLabel.textContent = 'ハシビロコウ ステージ';
+        loadPixabayImage("shoebill");
     }
+
+    tigerMode = !tigerMode;
 }
 
-/*
-    手動画像
-*/
+/* =========================
+   手動画像
+========================= */
 function handleFile(input){
 
     if(input.files && input.files[0]){
 
-        isShuffled = false;
-
         const reader = new FileReader();
 
-        reader.onload = (e)=>{
+        reader.onload = e => {
             img.src = e.target.result;
         };
 
@@ -255,60 +242,63 @@ function handleFile(input){
     }
 }
 
-/*
-    画像ロード後
-*/
+/* =========================
+   画像ロード後
+========================= */
 img.onload = function(){
 
     adjustContainerSize();
-
     initBoard();
 
-    // 最初からシャッフル
+    // ★最初からシャッフル
     shuffleBoard();
 };
 
+/* =========================
+   サイズ調整
+========================= */
 function adjustContainerSize(){
 
-    const outer = document.getElementById('game-outer');
+    const outer = document.getElementById("game-outer");
 
-    const maxWidth = outer.clientWidth;
-    const maxHeight = outer.clientHeight;
+    const maxW = outer.clientWidth;
+    const maxH = outer.clientHeight;
 
-    const imgRatio = img.width / img.height;
-    const areaRatio = maxWidth / maxHeight;
+    const ratio = img.width / img.height;
+    const area = maxW / maxH;
 
-    let finalW, finalH;
+    let w,h;
 
-    if(imgRatio > areaRatio){
-        finalW = maxWidth;
-        finalH = maxWidth / imgRatio;
+    if(ratio > area){
+        w = maxW;
+        h = maxW / ratio;
     }else{
-        finalH = maxHeight;
-        finalW = maxHeight * imgRatio;
+        h = maxH;
+        w = maxH * ratio;
     }
 
-    container.style.width = finalW + 'px';
-    container.style.height = finalH + 'px';
+    container.style.width = w + "px";
+    container.style.height = h + "px";
 }
 
+/* =========================
+   初期化
+========================= */
 function initBoard(){
 
-    container.innerHTML = '';
-
+    container.innerHTML = "";
     tiles = [];
 
-    for(let i=0; i<size*size; i++){
+    for(let i=0;i<size*size;i++){
 
-        const tile = document.createElement('div');
-
-        tile.className = 'tile';
+        const tile = document.createElement("div");
+        tile.className = "tile";
 
         const x = i % size;
         const y = Math.floor(i / size);
 
-        tile.style.width = (100 / size) + '%';
-        tile.style.height = (100 / size) + '%';
+        tile.style.width = (100/size) + "%";
+        tile.style.height = (100/size) + "%";
 
         tile.dataset.currentX = x;
         tile.dataset.currentY = y;
@@ -316,199 +306,94 @@ function initBoard(){
         tile.dataset.correctX = x;
         tile.dataset.correctY = y;
 
-        updateTilePosition(tile);
-
         tile.style.backgroundImage = `url('${img.src}')`;
-
-        tile.style.backgroundSize = (size * 100) + '%';
-
+        tile.style.backgroundSize = `${size*100}%`;
         tile.style.backgroundPosition =
-            `${(x / (size - 1)) * 100}% ${(y / (size - 1)) * 100}%`;
+            `${(x/(size-1))*100}% ${(y/(size-1))*100}%`;
 
-        tile.addEventListener('touchstart', handleStart, {passive:false});
-        tile.addEventListener('touchmove', handleMove, {passive:false});
-        tile.addEventListener('touchend', handleEnd, {passive:false});
+        tile.addEventListener("touchstart", start, {passive:false});
+        tile.addEventListener("touchmove", move, {passive:false});
+        tile.addEventListener("touchend", end, {passive:false});
 
         container.appendChild(tile);
-
         tiles.push(tile);
     }
+
+    updateAll();
 }
 
-function updateTilePosition(tile){
-
-    tile.style.left =
-        (tile.dataset.currentX * (100 / size)) + '%';
-
-    tile.style.top =
-        (tile.dataset.currentY * (100 / size)) + '%';
+/* =========================
+   位置更新
+========================= */
+function updateAll(){
+    tiles.forEach(t=>{
+        t.style.left = (t.dataset.currentX*(100/size)) + "%";
+        t.style.top = (t.dataset.currentY*(100/size)) + "%";
+    });
 }
 
-let draggedTile = null;
+/* =========================
+   ドラッグ
+========================= */
+let drag=null;
 
-function handleStart(e){
-
-    draggedTile = e.target;
-
-    draggedTile.style.zIndex = 1000;
-    draggedTile.style.transition = 'none';
+function start(e){
+    drag=e.target;
 }
 
-function handleMove(e){
-
+function move(e){
     e.preventDefault();
-
-    const touch = e.touches[0];
-
-    const rect = container.getBoundingClientRect();
-
-    const left = Math.max(
-        0,
-        Math.min(
-            touch.clientX - rect.left - draggedTile.offsetWidth / 2,
-            rect.width - draggedTile.offsetWidth
-        )
-    );
-
-    const top = Math.max(
-        0,
-        Math.min(
-            touch.clientY - rect.top - draggedTile.offsetHeight / 2,
-            rect.height - draggedTile.offsetHeight
-        )
-    );
-
-    draggedTile.style.left = left + 'px';
-    draggedTile.style.top = top + 'px';
 }
 
-function handleEnd(e){
-
-    const touch = e.changedTouches[0];
-
-    const rect = container.getBoundingClientRect();
-
-    const x = Math.floor(
-        (touch.clientX - rect.left) / (rect.width / size)
-    );
-
-    const y = Math.floor(
-        (touch.clientY - rect.top) / (rect.height / size)
-    );
-
-    const targetTile = tiles.find(
-        t =>
-        t.dataset.currentX == x &&
-        t.dataset.currentY == y &&
-        t !== draggedTile
-    );
-
-    draggedTile.style.transition = 'all 0.3s';
-
-    if(targetTile && x >=0 && x < size && y >=0 && y < size){
-
-        const tx = draggedTile.dataset.currentX;
-        const ty = draggedTile.dataset.currentY;
-
-        draggedTile.dataset.currentX = targetTile.dataset.currentX;
-        draggedTile.dataset.currentY = targetTile.dataset.currentY;
-
-        targetTile.dataset.currentX = tx;
-        targetTile.dataset.currentY = ty;
-    }
-
-    tiles.forEach(updateTilePosition);
-
-    draggedTile.style.zIndex = 1;
-
-    draggedTile = null;
-
-    if(isShuffled){
-        checkClear();
-    }
+function end(){
+    drag=null;
 }
 
-function checkClear(){
-
-    const clear = tiles.every(
-        t =>
-        t.dataset.currentX == t.dataset.correctX &&
-        t.dataset.currentY == t.dataset.correctY
-    );
-
-    if(clear){
-
-        clearCount++;
-
-        /*
-            1回クリアごとに交互切り替え
-        */
-        tigerMode = !tigerMode;
-
-        overlay.style.display = 'flex';
-
-        setTimeout(()=>{
-
-            overlay.style.display = 'none';
-
-            loadNextImage();
-
-        }, 2500);
-    }
-}
-
+/* =========================
+   シャッフル
+========================= */
 function shuffleBoard(){
 
-    do{
+    for(let i=0;i<size*size*3;i++){
 
-        for(let i=0; i<size*size*3; i++){
+        const a = tiles[Math.floor(Math.random()*tiles.length)];
+        const b = tiles[Math.floor(Math.random()*tiles.length)];
 
-            const t1 = tiles[Math.floor(Math.random() * tiles.length)];
-            const t2 = tiles[Math.floor(Math.random() * tiles.length)];
+        const ax = a.dataset.currentX;
+        const ay = a.dataset.currentY;
 
-            const tx = t1.dataset.currentX;
-            const ty = t1.dataset.currentY;
+        a.dataset.currentX = b.dataset.currentX;
+        a.dataset.currentY = b.dataset.currentY;
 
-            t1.dataset.currentX = t2.dataset.currentX;
-            t1.dataset.currentY = t2.dataset.currentY;
-
-            t2.dataset.currentX = tx;
-            t2.dataset.currentY = ty;
-        }
-
-    }while(
-        tiles.every(
-            t =>
-            t.dataset.currentX == t.dataset.correctX &&
-            t.dataset.currentY == t.dataset.correctY
-        )
-    );
+        b.dataset.currentX = ax;
+        b.dataset.currentY = ay;
+    }
 
     isShuffled = true;
-
-    tiles.forEach(updateTilePosition);
+    updateAll();
 }
 
-function changeDifficulty(s, btn){
+/* =========================
+   難易度
+========================= */
+function changeDifficulty(s,btn){
 
     size = s;
 
-    document
-        .querySelectorAll('.diff-btn')
-        .forEach(b => b.classList.remove('active'));
+    document.querySelectorAll(".diff-btn")
+        .forEach(b=>b.classList.remove("active"));
 
-    btn.classList.add('active');
+    btn.classList.add("active");
 
     initBoard();
-
     shuffleBoard();
 }
 
-/*
-    最初の画像
-*/
+/* =========================
+   初期開始
+========================= */
 loadNextImage();
-</script>
 
+</script>
 </body>
 </html>
