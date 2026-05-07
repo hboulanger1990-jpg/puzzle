@@ -4,45 +4,47 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Poster Puzzle Pro</title>
+    <link rel="manifest" href="manifest.json">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <style>
         body { 
             margin: 0; padding: 0; font-family: sans-serif; 
             display: flex; flex-direction: column; align-items: center; 
             background: #121212; color: white; height: 100vh; overflow: hidden;
         }
-        .header { width: 100%; padding-top: calc(10px + env(safe-area-inset-top)); display: flex; flex-direction: column; align-items: center; z-index: 10; }
-        h1 { font-size: 1.1rem; margin: 5px 0; color: #ffeb3b; }
+        .header { width: 100%; padding-top: calc(10px + env(safe-area-inset-top)); display: flex; flex-direction: column; align-items: center; z-index: 10; background: #1e1e1e; }
+        h1 { font-size: 1.2rem; margin: 10px 0; color: #ffeb3b; }
         
-        .selector-row { margin-bottom: 5px; display: flex; gap: 5px; flex-wrap: wrap; justify-content: center; }
-        .btn-small { padding: 4px 8px; border-radius: 12px; border: 1px solid #555; background: #333; color: white; font-size: 10px; cursor: pointer; }
-        .btn-small.active { border-color: #ffeb3b; color: #ffeb3b; }
+        .selector-row { margin-bottom: 8px; display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; width: 95%; }
+        /* ボタンを大きく修正 */
+        .btn-small { padding: 12px 14px; border-radius: 8px; border: 1px solid #555; background: #333; color: white; font-size: 14px; cursor: pointer; min-width: 65px; min-height: 44px; }
+        .btn-small.active { border-color: #ffeb3b; color: #ffeb3b; background: #444; }
 
         #main-game { flex: 1; display: flex; flex-direction: column; align-items: center; width: 100%; }
         #stats-page { display: none; flex: 1; width: 100%; flex-direction: column; align-items: center; justify-content: center; }
 
-        #game-outer { flex: 1; width: 95vw; display: flex; justify-content: center; align-items: center; margin-bottom: 10px; }
-        #game-container { position: relative; border: 3px solid #fff; border-radius: 5px; background: #333; overflow: hidden; }
-        .tile { position: absolute; border: 0.3px solid rgba(255,255,255,0.4); box-sizing: border-box; transition: left 0.3s, top 0.3s; background-repeat: no-repeat; }
+        #game-outer { flex: 1; width: 90vw; display: flex; justify-content: center; align-items: center; margin: 10px 0; }
+        #game-container { position: relative; border: 3px solid #fff; border-radius: 8px; background: #333; overflow: hidden; }
+        .tile { position: absolute; border: 0.5px solid rgba(255,255,255,0.3); box-sizing: border-box; transition: left 0.3s, top 0.3s; background-repeat: no-repeat; touch-action: none; }
         
-        .controls { width: 95%; display: flex; justify-content: center; gap: 8px; padding-bottom: calc(20px + env(safe-area-inset-bottom)); }
-        .btn { flex: 1; padding: 12px 0; border-radius: 10px; border: none; font-weight: bold; color: white; font-size: 13px; text-align: center; cursor: pointer; }
+        .controls { width: 95%; display: flex; justify-content: center; gap: 10px; padding-bottom: calc(30px + env(safe-area-inset-bottom)); }
+        .btn { flex: 1; padding: 16px 0; border-radius: 12px; border: none; font-weight: bold; color: white; font-size: 14px; text-align: center; cursor: pointer; min-height: 50px; }
         .file-label { background: #e91e63; }
-        .shuffle-btn { background: #2196F3; }
         .next-btn { background: #ff9800; }
         .stats-btn { background: #607d8b; }
         input[type="file"] { display: none; }
 
         #clear-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.8); display: none; flex-direction: column;
+            background: rgba(0,0,0,0.85); display: none; flex-direction: column;
             justify-content: center; align-items: center; z-index: 2000;
         }
-        .stats-card { background: #222; padding: 20px; border-radius: 15px; border: 1px solid #ffeb3b; text-align: center; width: 80%; }
     </style>
 </head>
 <body>
     <div class="header">
-        <h1 onclick="togglePage('game')">Poster Puzzle Pro</h1>
+        <h1>Poster Puzzle Pro</h1>
         <div class="selector-row">
             <button class="btn-small diff-btn" onclick="changeDifficulty(3, this)">初級</button>
             <button class="btn-small diff-btn active" onclick="changeDifficulty(4, this)">中級</button>
@@ -52,32 +54,31 @@
             <button class="btn-small cat-btn active" onclick="setCategory('bird', this)">鳥</button>
             <button class="btn-small cat-btn" onclick="setCategory('dog', this)">犬</button>
             <button class="btn-small cat-btn" onclick="setCategory('cat', this)">猫</button>
-            <button class="btn-small cat-btn" onclick="setCategory('horse', this)">馬</button>
-            <button class="btn-small cat-btn" onclick="setCategory('shoebill', this)">ハシビロコウ</button>
+            <button class="btn-small cat-btn" onclick="setCategory('shoebill', this)">ハシビロ</button>
         </div>
     </div>
 
     <div id="main-game">
         <div id="game-outer"><div id="game-container"></div></div>
         <div class="controls">
-            <label class="btn file-label"><input type="file" accept="image/*" multiple onchange="handleFiles(this)">フォルダ選択</label>
+            <label class="btn file-label"><input type="file" accept="image/*" multiple onchange="handleFiles(this)">フォルダ</label>
             <button class="btn next-btn" onclick="nextImage()">次の画像</button>
             <button class="btn stats-btn" onclick="togglePage('stats')">記録</button>
         </div>
     </div>
 
     <div id="stats-page">
-        <div class="stats-card">
-            <h2>クリア実績</h2>
-            <p>今日のクリア: <span id="stat-today">0</span> 回</p>
-            <p>累計クリア: <span id="stat-total">0</span> 回</p>
-            <button class="btn next-btn" style="width:100%" onclick="togglePage('game')">戻る</button>
+        <div style="background: #222; padding: 30px; border-radius: 20px; border: 1px solid #ffeb3b; text-align: center; width: 80%;">
+            <h2 style="color:#ffeb3b">クリア実績</h2>
+            <p>今日のクリア: <span id="stat-today" style="font-size: 1.5rem;">0</span> 回</p>
+            <p>累計クリア: <span id="stat-total" style="font-size: 1.5rem;">0</span> 回</p>
+            <button class="btn next-btn" style="width:100%; margin-top:10px;" onclick="togglePage('game')">戻る</button>
         </div>
     </div>
 
     <div id="clear-overlay">
-        <div style="font-size: 2.5rem;">🎉</div>
-        <div style="font-size: 1.5rem; font-weight: bold; color: #ffeb3b; margin: 10px 0;">おめでとう！</div>
+        <div style="font-size: 4rem;">🎉</div>
+        <div style="font-size: 1.5rem; font-weight: bold; color: #ffeb3b;">おめでとう！</div>
     </div>
 
     <script>
@@ -92,7 +93,6 @@
         const container = document.getElementById('game-container');
         const overlay = document.getElementById('clear-overlay');
 
-        // 画像読み込み完了時：サイズ調整 -> タイル作成 -> 即シャッフル
         img.onload = () => {
             adjustContainerSize();
             initBoard();
@@ -111,7 +111,7 @@
 
         function setCategory(cat, btn) {
             currentCategory = cat;
-            localImageList = []; // カテゴリ選択時はファイルリストをクリア
+            localImageList = [];
             document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
             nextImage();
@@ -181,15 +181,19 @@
 
         let draggedTile = null;
         function handleStart(e) { draggedTile = e.target; draggedTile.style.zIndex = 1000; draggedTile.style.transition = 'none'; }
+        
         function handleMove(e) {
             e.preventDefault();
-            const touch = e.touches[0];
+            if (!draggedTile) return;
+            const touch = e.touches[0]; // 0番目の指を指定
             const rect = container.getBoundingClientRect();
             draggedTile.style.left = (touch.clientX - rect.left - draggedTile.offsetWidth/2) + 'px';
             draggedTile.style.top = (touch.clientY - rect.top - draggedTile.offsetHeight/2) + 'px';
         }
+
         function handleEnd(e) {
-            const touch = e.changedTouches[0];
+            if (!draggedTile) return;
+            const touch = e.changedTouches[0]; // 0番目の指を指定
             const rect = container.getBoundingClientRect();
             const x = Math.floor((touch.clientX - rect.left) / (rect.width / size));
             const y = Math.floor((touch.clientY - rect.top) / (rect.height / size));
@@ -242,7 +246,7 @@
             nextImage();
         }
 
-        nextImage(); // 初回起動
+        nextImage();
     </script>
 </body>
 </html>
