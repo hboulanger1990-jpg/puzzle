@@ -1,12 +1,15 @@
+```html
 <!DOCTYPE html>
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="viewport"
+content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
 
 <title>Puzzle Pro</title>
 
 <style>
+
 body{
     margin:0;
     padding:0;
@@ -40,7 +43,6 @@ h1{
     gap:8px;
 }
 
-/* ボタン共通（中央揃え強化） */
 .btn{
     flex:1;
     padding:12px 0;
@@ -49,14 +51,12 @@ h1{
     font-weight:bold;
     color:white;
     font-size:13px;
-
     display:flex;
     justify-content:center;
     align-items:center;
     text-align:center;
 }
 
-/* 難易度ボタン */
 .diff-btn{
     padding:8px 16px;
     border-radius:18px;
@@ -86,6 +86,9 @@ h1{
     border-radius:5px;
     background:#333;
     overflow:hidden;
+
+    /* スクロール防止 */
+    touch-action:none;
 }
 
 .tile{
@@ -93,7 +96,10 @@ h1{
     border:1px solid rgba(255,255,255,0.2);
     box-sizing:border-box;
     background-repeat:no-repeat;
-    transition:left 0.2s, top 0.2s;
+
+    /* transformで軽量化 */
+    transition:transform 0.15s;
+    will-change:transform;
 }
 
 .controls{
@@ -104,12 +110,13 @@ h1{
     padding-bottom:calc(60px + env(safe-area-inset-bottom));
 }
 
-/* 個別色 */
 .file-label{ background:#e91e63; }
 .shuffle-btn{ background:#2196F3; }
 .next-btn{ background:#ff9800; }
 
-input[type="file"]{ display:none; }
+input[type="file"]{
+    display:none;
+}
 
 #clear-overlay{
     position:fixed;
@@ -125,12 +132,14 @@ input[type="file"]{ display:none; }
     font-size:2rem;
     color:#ffeb3b;
 }
+
 </style>
 </head>
 
 <body>
 
 <div class="header">
+
     <h1>Poster Puzzle Pro</h1>
 
     <div class="difficulty-selector">
@@ -139,6 +148,7 @@ input[type="file"]{ display:none; }
         <button class="diff-btn" onclick="changeDifficulty(5,this)">上級</button>
         <button class="diff-btn" onclick="changeDifficulty(7,this)">超上級</button>
     </div>
+
 </div>
 
 <div id="game-outer">
@@ -146,60 +156,92 @@ input[type="file"]{ display:none; }
 </div>
 
 <div class="controls">
+
     <label class="btn file-label">
         <input type="file" accept="image/*" onchange="handleFile(this)">
         写真選択
     </label>
 
-    <button class="btn shuffle-btn" onclick="shuffleBoard()">シャッフル</button>
-    <button class="btn next-btn" onclick="loadNextImage()">次の画像</button>
+    <button class="btn shuffle-btn" onclick="shuffleBoard()">
+        シャッフル
+    </button>
+
+    <button class="btn next-btn" onclick="loadNextImage()">
+        次の画像
+    </button>
+
 </div>
 
-<div id="clear-overlay">CLEAR!</div>
+<div id="clear-overlay">
+    CLEAR!
+</div>
 
 <script>
 
 /* =========================
    Pixabay API
 ========================= */
-const PIXABAY_KEY = "55756665-23bacf1941f5fd32e51bbc3c3";
+
+const PIXABAY_KEY =
+"55756665-23bacf1941f5fd32e51bbc3c3";
 
 /* =========================
    状態
 ========================= */
+
 let size = 4;
+
 let img = new Image();
+
+/* CORS対策 */
+img.crossOrigin = "anonymous";
+
 let tiles = [];
+
 let drag = null;
+
 let tigerMode = false;
 
 /* =========================
    DOM
 ========================= */
-const container = document.getElementById("game-container");
-const overlay = document.getElementById("clear-overlay");
+
+const container =
+document.getElementById("game-container");
+
+const overlay =
+document.getElementById("clear-overlay");
 
 /* =========================
    Pixabay取得
 ========================= */
+
 function loadPixabayImage(type){
 
-    const query = (type === "shoebill")
-        ? "shoebill bird stork"
-        : "tiger bengal";
+    const query =
+    (type === "shoebill")
+    ? "shoebill bird stork"
+    : "tiger bengal";
 
-    fetch(`https://pixabay.com/api/?key=${PIXABAY_KEY}&q=${encodeURIComponent(query)}&image_type=photo&per_page=50`)
+    fetch(
+        `https://pixabay.com/api/?key=${PIXABAY_KEY}&q=${encodeURIComponent(query)}&image_type=photo&per_page=50`
+    )
     .then(r=>r.json())
     .then(d=>{
 
-        const hit = d.hits[Math.floor(Math.random()*d.hits.length)];
+        const hit =
+        d.hits[
+            Math.floor(Math.random()*d.hits.length)
+        ];
+
         img.src = hit.webformatURL;
     });
 }
 
 /* =========================
-   次の画像（交互）
+   次の画像
 ========================= */
+
 function loadNextImage(){
 
     if(tigerMode){
@@ -214,18 +256,24 @@ function loadNextImage(){
 /* =========================
    画像ロード
 ========================= */
+
 img.onload = function(){
+
     adjust();
+
     init();
+
     shuffleBoard();
 };
 
 /* =========================
    サイズ調整
 ========================= */
+
 function adjust(){
 
-    const outer = document.getElementById("game-outer");
+    const outer =
+    document.getElementById("game-outer");
 
     const w = outer.clientWidth;
     const h = outer.clientHeight;
@@ -233,54 +281,69 @@ function adjust(){
     const r = img.width / img.height;
     const ar = w / h;
 
-    let fw,fh;
+    let fw, fh;
 
-    if(r>ar){
-        fw=w;
-        fh=w/r;
+    if(r > ar){
+
+        fw = w;
+        fh = w / r;
+
     }else{
-        fh=h;
-        fw=h*r;
+
+        fh = h;
+        fw = h * r;
     }
 
-    container.style.width = fw+"px";
-    container.style.height = fh+"px";
+    container.style.width = fw + "px";
+    container.style.height = fh + "px";
 }
 
 /* =========================
    初期化
 ========================= */
+
 function init(){
 
-    container.innerHTML="";
-    tiles=[];
+    container.innerHTML = "";
+
+    tiles = [];
 
     for(let i=0;i<size*size;i++){
 
-        const t=document.createElement("div");
-        t.className="tile";
+        const t = document.createElement("div");
 
-        const x=i%size;
-        const y=Math.floor(i/size);
+        t.className = "tile";
 
-        t.style.width=(100/size)+"%";
-        t.style.height=(100/size)+"%";
+        const x = i % size;
+        const y = Math.floor(i / size);
 
-        t.dataset.x=x;
-        t.dataset.y=y;
-        t.dataset.cx=x;
-        t.dataset.cy=y;
+        t.style.width =
+        (100 / size) + "%";
 
-        t.style.backgroundImage=`url('${img.src}')`;
-        t.style.backgroundSize=`${size*100}%`;
-        t.style.backgroundPosition=
-            `${(x/(size-1))*100}% ${(y/(size-1))*100}%`;
+        t.style.height =
+        (100 / size) + "%";
+
+        t.dataset.x = x;
+        t.dataset.y = y;
+
+        t.dataset.cx = x;
+        t.dataset.cy = y;
+
+        t.style.backgroundImage =
+        `url('${img.src}')`;
+
+        t.style.backgroundSize =
+        `${size * 100}%`;
+
+        t.style.backgroundPosition =
+        `${(x/(size-1))*100}% ${(y/(size-1))*100}%`;
 
         t.addEventListener("touchstart",start);
-        t.addEventListener("touchmove",move);
+        t.addEventListener("touchmove",move,{passive:false});
         t.addEventListener("touchend",end);
 
         container.appendChild(t);
+
         tiles.push(t);
     }
 
@@ -290,65 +353,111 @@ function init(){
 /* =========================
    描画
 ========================= */
+
 function render(){
+
     tiles.forEach(t=>{
-        t.style.left=(t.dataset.x*(100/size))+"%";
-        t.style.top=(t.dataset.y*(100/size))+"%";
+
+        t.style.transform =
+        `translate(${t.dataset.x*(100/size)}%, ${t.dataset.y*(100/size)}%)`;
     });
 }
 
 /* =========================
-   操作
+   操作開始
 ========================= */
+
 function start(e){
-    drag=e.target;
-    drag.style.zIndex=10;
+
+    drag = e.target;
+
+    drag.style.zIndex = 10;
 }
+
+/* =========================
+   ドラッグ
+========================= */
 
 function move(e){
+
+    e.preventDefault();
+
     if(!drag)return;
 
-    const touch=e.touches[0];
-    const rect=container.getBoundingClientRect();
+    const touch = e.touches[0];
 
-    drag.style.left=
-        (touch.clientX-rect.left-drag.offsetWidth/2)+"px";
+    const rect =
+    container.getBoundingClientRect();
 
-    drag.style.top=
-        (touch.clientY-rect.top-drag.offsetHeight/2)+"px";
+    const x =
+    touch.clientX -
+    rect.left -
+    drag.offsetWidth / 2;
+
+    const y =
+    touch.clientY -
+    rect.top -
+    drag.offsetHeight / 2;
+
+    drag.style.transition = "none";
+
+    drag.style.transform =
+    `translate(${x}px, ${y}px)`;
 }
 
+/* =========================
+   終了
+========================= */
+
 function end(e){
+
     if(!drag)return;
 
-    const touch=e.changedTouches[0];
-    const rect=container.getBoundingClientRect();
+    const touch = e.changedTouches[0];
 
-    const x=Math.floor((touch.clientX-rect.left)/(rect.width/size));
-    const y=Math.floor((touch.clientY-rect.top)/(rect.height/size));
+    const rect =
+    container.getBoundingClientRect();
 
-    const target=tiles.find(t=>
-        t.dataset.x==x &&
-        t.dataset.y==y &&
-        t!==drag
+    const x =
+    Math.floor(
+        (touch.clientX - rect.left)
+        / (rect.width / size)
+    );
+
+    const y =
+    Math.floor(
+        (touch.clientY - rect.top)
+        / (rect.height / size)
+    );
+
+    const target =
+    tiles.find(t=>
+
+        t.dataset.x == x &&
+        t.dataset.y == y &&
+        t !== drag
     );
 
     if(target){
 
-        let tx=drag.dataset.x;
-        let ty=drag.dataset.y;
+        let tx = drag.dataset.x;
+        let ty = drag.dataset.y;
 
-        drag.dataset.x=target.dataset.x;
-        drag.dataset.y=target.dataset.y;
+        drag.dataset.x = target.dataset.x;
+        drag.dataset.y = target.dataset.y;
 
-        target.dataset.x=tx;
-        target.dataset.y=ty;
+        target.dataset.x = tx;
+        target.dataset.y = ty;
     }
+
+    drag.style.transform = "";
+    drag.style.transition = "";
 
     render();
 
-    drag.style.zIndex=1;
-    drag=null;
+    drag.style.zIndex = 1;
+
+    drag = null;
 
     check();
 }
@@ -356,18 +465,26 @@ function end(e){
 /* =========================
    クリア判定
 ========================= */
+
 function check(){
 
-    const ok=tiles.every(t=>
-        t.dataset.x==t.dataset.cx &&
-        t.dataset.y==t.dataset.cy
+    const ok =
+    tiles.every(t=>
+
+        t.dataset.x == t.dataset.cx &&
+        t.dataset.y == t.dataset.cy
     );
 
     if(ok){
-        overlay.style.display="flex";
+
+        overlay.style.display = "flex";
+
         setTimeout(()=>{
-            overlay.style.display="none";
+
+            overlay.style.display = "none";
+
             loadNextImage();
+
         },1500);
     }
 }
@@ -375,21 +492,37 @@ function check(){
 /* =========================
    シャッフル
 ========================= */
+
 function shuffleBoard(){
 
-    for(let i=0;i<size*size*3;i++){
+    let solved = true;
 
-        const a=tiles[Math.floor(Math.random()*tiles.length)];
-        const b=tiles[Math.floor(Math.random()*tiles.length)];
+    while(solved){
 
-        let tx=a.dataset.x;
-        let ty=a.dataset.y;
+        for(let i=0;i<size*size*3;i++){
 
-        a.dataset.x=b.dataset.x;
-        a.dataset.y=b.dataset.y;
+            const a =
+            tiles[Math.floor(Math.random()*tiles.length)];
 
-        b.dataset.x=tx;
-        b.dataset.y=ty;
+            const b =
+            tiles[Math.floor(Math.random()*tiles.length)];
+
+            let tx = a.dataset.x;
+            let ty = a.dataset.y;
+
+            a.dataset.x = b.dataset.x;
+            a.dataset.y = b.dataset.y;
+
+            b.dataset.x = tx;
+            b.dataset.y = ty;
+        }
+
+        solved =
+        tiles.every(t=>
+
+            t.dataset.x == t.dataset.cx &&
+            t.dataset.y == t.dataset.cy
+        );
     }
 
     render();
@@ -398,35 +531,48 @@ function shuffleBoard(){
 /* =========================
    難易度
 ========================= */
+
 function changeDifficulty(s,btn){
 
-    size=s;
+    if(!img.src)return;
 
-    document.querySelectorAll(".diff-btn")
-        .forEach(b=>b.classList.remove("active"));
+    size = s;
+
+    document
+    .querySelectorAll(".diff-btn")
+    .forEach(b=>b.classList.remove("active"));
 
     btn.classList.add("active");
 
     init();
+
     shuffleBoard();
 }
 
 /* =========================
    手動画像
 ========================= */
+
 function handleFile(input){
 
-    const reader=new FileReader();
-    reader.onload=e=>img.src=e.target.result;
+    const reader = new FileReader();
+
+    reader.onload = e => {
+
+        img.src = e.target.result;
+    };
+
     reader.readAsDataURL(input.files[0]);
 }
 
 /* =========================
    開始
 ========================= */
+
 loadNextImage();
 
 </script>
 
 </body>
 </html>
+```
