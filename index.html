@@ -105,7 +105,7 @@
                 img.src = localImageList[localImageIndex];
                 localImageIndex = (localImageIndex + 1) % localImageList.length;
             } else {
-                img.src = `https://loremflickr.com/{currentCategory}?random=${Math.random()}`;
+                img.src = "https://loremflickr.com/" + currentCategory + "?random=" + Math.random();
             }
         }
 
